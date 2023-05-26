@@ -254,6 +254,7 @@ bool fastcat::Actuator::Write(DeviceCmd& cmd)
       break;
 
     case ACTUATOR_SET_DIGITAL_OUTPUT_CMD:
+      MSG("Setting the digital output for actuator!\n");
       ElmoSetDigitalOutput(
         cmd.actuator_set_digital_output_cmd.digital_output_index,
         cmd.actuator_set_digital_output_cmd.output_level);
