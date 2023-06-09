@@ -178,14 +178,17 @@ bool fastcat::EgdOffline::ReadProfiledMode()
         jsd_egd_state_.actual_velocity = 0;
 
       } else {
+        MSG("HELLO MY DARLING: The amps are not less than 1e-6. It is set to: %f\n", jsd_motion_cmd_.prof_torque.target_torque_amps);
         error = jsd_slave_config_.egd.max_motor_speed -
                 abs(jsd_egd_state_.actual_velocity);
         delta = copysign(jsd_slave_config_.egd.max_profile_accel * loop_period_,
                          jsd_motion_cmd_.prof_torque.target_torque_amps);
         if (error < abs(delta)) {
+          MSG("HELLO MY DARLING: The error is less than abs(delta). Error is: %d, Delta is: %d\n", error, delta);
           jsd_egd_state_.actual_velocity =
               jsd_slave_config_.egd.max_motor_speed;
         } else {
+          MSG("HELLO MY DARLING: The error is NOT less than abs(delta). Error is: %d, Delta is: %d\n", error, delta);
           jsd_egd_state_.actual_velocity += delta;
         }
       }
