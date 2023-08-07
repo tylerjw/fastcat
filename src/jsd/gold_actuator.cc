@@ -56,6 +56,8 @@ void fastcat::GoldActuator::PopulateState()
   state_->gold_actuator_state.elmo_actual_position =
       jsd_egd_state_.actual_position;
   state_->gold_actuator_state.elmo_cmd_position = jsd_egd_state_.cmd_position;
+  state_->gold_actuator_state.elmo_auxiliary_position = 
+      jsd_egd_state_.auxiliary_position;
 
   state_->gold_actuator_state.actual_position =
       PosCntsToEu(jsd_egd_state_.actual_position);

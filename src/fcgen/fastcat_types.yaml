@@ -125,6 +125,8 @@ states:
       type: int32_t
     - name: elmo_cmd_position
       type: int32_t
+    - name: elmo_auxiliary_position
+      type: int32_t
     - name: actuator_state_machine_state
       type: uint32_t
     - name: power

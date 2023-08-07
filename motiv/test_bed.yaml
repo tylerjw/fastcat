@@ -1,0 +1,38 @@
+fastcat:
+  target_loop_rate_hz:                500
+  zero_latency_required:              True
+  actuator_position_directory:        /tmp/
+  actuator_fault_on_missing_pos_file: False
+
+buses:
+  - type: jsd_bus
+    ifname: enp0s31f6
+    enable_autorecovery: True
+
+    devices:
+
+    - device_class: GoldActuator
+      name: wheel_3
+      actuator_type:                   revolute # eu = radians
+      gear_ratio:                      160.0
+      counts_per_rev:                  20216
+      max_speed_eu_per_sec:            1.09  #rad/sec - found in ros1 config
+      max_accel_eu_per_sec2:           1.09  #rad/sec/sec - found in ros1 config
+      over_speed_multiplier:           2 
+      vel_tracking_error_eu_per_sec:   1000
+      pos_tracking_error_eu:           1000
+      peak_current_limit_amps:         10
+      peak_current_time_sec:           3.0
+      continuous_current_limit_amps:   5
+      torque_slope_amps_per_sec:       0.5 # amps/sec
+      low_pos_cal_limit_eu:            -3.2
+      low_pos_cmd_limit_eu:            -3.14159
+      high_pos_cmd_limit_eu:           3.14159
+      high_pos_cal_limit_eu:           3.2 
+      holding_duration_sec:            2.0 # found in ros1 config
+      elmo_brake_engage_msec:          500 
+      elmo_brake_disengage_msec:       100
+      elmo_crc:                        948917380
+      elmo_drive_max_current_limit:    10 # amps
+      smooth_factor:                   0
+

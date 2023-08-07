@@ -423,6 +423,16 @@ void* cli_process(void*)
       cmd.actuator_prof_pos_cmd.relative         = atoi(tokens[5].c_str());
       cmd.type = fastcat::ACTUATOR_PROF_POS_CMD;
 
+    } else if (tokens[0].compare("actuator_csp_cmd") == 0 &&
+               tokens.size() == 6) {
+      MSG("Issuing actuator_csp_cmd command");
+      cmd.name                                   = tokens[1];
+      cmd.actuator_csp_cmd.target_position       = atof(tokens[2].c_str());
+      cmd.actuator_csp_cmd.position_offset       = atof(tokens[3].c_str());
+      cmd.actuator_csp_cmd.velocity_offset       = atof(tokens[4].c_str());
+      cmd.actuator_csp_cmd.torque_offset_amps    = atoi(tokens[5].c_str());
+      cmd.type = fastcat::ACTUATOR_CSP_CMD;
+
     } else if (tokens[0].compare("reset") == 0) {
       manager.ExecuteAllDeviceResets();
       free(line);
