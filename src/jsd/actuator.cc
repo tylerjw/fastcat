@@ -779,7 +779,7 @@ double fastcat::Actuator::GetActualPosition(const DeviceState& state)
 {
   double actual_position;
   if (state.type == GOLD_ACTUATOR_STATE) {
-    actual_position = state.gold_actuator_state.actual_position;
+    actual_position = state.gold_actuator_state.output_absolute_position;
   } else if (state.type == PLATINUM_ACTUATOR_STATE) {
     actual_position = state.platinum_actuator_state.actual_position;
   } else {

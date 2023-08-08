@@ -78,7 +78,9 @@ states:
 
   - name: gold_actuator
     fields:
-    - name: actual_position
+    - name: input_position
+      type: double
+    - name: output_absolute_position
       type: double
     - name: actual_velocity
       type: double
