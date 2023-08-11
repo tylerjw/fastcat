@@ -118,7 +118,6 @@ void print_header(std::vector<fastcat::DeviceState> states)
       case fastcat::GOLD_ACTUATOR_STATE:
       case fastcat::PLATINUM_ACTUATOR_STATE:
         fprintf(file, "%s_actual_position, ", state->name.c_str());
-        fprintf(file, "%s_output_absolute_position, ", state->name.c_str());
         fprintf(file, "%s_actual_velocity, ", state->name.c_str());
         fprintf(file, "%s_actual_current, ", state->name.c_str());
 
@@ -248,8 +247,7 @@ void print_csv_data(std::vector<fastcat::DeviceState> states)
         fprintf(file, "%u, ", state->faulter_state.fault_active);
         break;
       case fastcat::GOLD_ACTUATOR_STATE:
-        fprintf(file, "%lf, ", state->gold_actuator_state.input_position);
-        fprintf(file, "%lf, ", state->gold_actuator_state.output_absolute_position);
+        fprintf(file, "%lf, ", state->gold_actuator_state.actual_position);
         fprintf(file, "%lf, ", state->gold_actuator_state.actual_velocity);
         fprintf(file, "%lf, ", state->gold_actuator_state.actual_current);
 

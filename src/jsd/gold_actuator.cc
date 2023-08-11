@@ -59,10 +59,8 @@ void fastcat::GoldActuator::PopulateState()
   state_->gold_actuator_state.elmo_auxiliary_position = 
       jsd_egd_state_.auxiliary_position;
 
-  state_->gold_actuator_state.input_position =
+  state_->gold_actuator_state.actual_position =
       PosCntsToEu(jsd_egd_state_.actual_position);
-  state_->gold_actuator_state.output_absolute_position =
-      PosCntsToEu(jsd_egd_state_.auxiliary_position);
   state_->gold_actuator_state.actual_velocity =
       CntsToEu(jsd_egd_state_.actual_velocity);
   state_->gold_actuator_state.actual_current = jsd_egd_state_.actual_current;
@@ -200,7 +198,7 @@ bool fastcat::GoldActuator::HandleNewProfPosCmdImpl(const DeviceCmd& cmd)
   }
 
   fastcat_trap_generate(
-      &trap_, state_->time, state_->gold_actuator_state.input_position,
+      &trap_, state_->time, state_->gold_actuator_state.actual_position,
       ComputeTargetPosProfPosCmd(cmd), state_->gold_actuator_state.cmd_velocity,
       cmd.actuator_prof_pos_cmd.end_velocity,
       cmd.actuator_prof_pos_cmd.profile_velocity,  // consider abs()
@@ -222,7 +220,7 @@ bool fastcat::GoldActuator::HandleNewProfVelCmdImpl(const DeviceCmd& cmd)
   }
 
   fastcat_trap_generate_vel(&trap_, state_->time,
-                    state_->gold_actuator_state.input_position,
+                    state_->gold_actuator_state.actual_position,
                     state_->gold_actuator_state.cmd_velocity,
                     cmd.actuator_prof_vel_cmd.target_velocity,
                     cmd.actuator_prof_vel_cmd.profile_accel,
@@ -318,7 +316,7 @@ fastcat::FaultType fastcat::GoldActuator::ProcessProfPosDisengaging()
     // If brakes are disengaged, setup the traps and transition to the execution
     // state
     fastcat_trap_generate(
-        &trap_, state_->time, state_->gold_actuator_state.input_position,
+        &trap_, state_->time, state_->gold_actuator_state.actual_position,
         ComputeTargetPosProfPosCmd(last_cmd_),
         state_->gold_actuator_state.cmd_velocity,
         last_cmd_.actuator_prof_pos_cmd.end_velocity,
@@ -334,7 +332,7 @@ fastcat::FaultType fastcat::GoldActuator::ProcessProfPosDisengaging()
     jsd_elmo_motion_command_csp_t jsd_cmd;
 
     jsd_cmd.target_position =
-        PosEuToCnts(state_->gold_actuator_state.input_position);
+        PosEuToCnts(state_->gold_actuator_state.actual_position);
     jsd_cmd.position_offset    = 0;
     jsd_cmd.velocity_offset    = 0;
     jsd_cmd.torque_offset_amps = 0;
@@ -365,7 +363,7 @@ fastcat::FaultType fastcat::GoldActuator::ProcessProfVelDisengaging()
     // If brakes are disengaged, setup the traps and transition to the execution
     // state
     fastcat_trap_generate_vel(&trap_, state_->time,
-                      state_->gold_actuator_state.input_position,
+                      state_->gold_actuator_state.actual_position,
                       state_->gold_actuator_state.cmd_velocity,
                       last_cmd_.actuator_prof_vel_cmd.target_velocity,
                       last_cmd_.actuator_prof_vel_cmd.profile_accel,
@@ -444,7 +442,12 @@ double fastcat::GoldActuator::GetActualVelocity()
 
 double fastcat::GoldActuator::GetElmoActualPosition()
 {
-  return state_->gold_actuator_state.output_absolute_position;
+  return state_->gold_actuator_state.actual_position;
+}
+
+double fastcat::GoldActuator::GetElmoAbsolutePosition()
+{
+  return state_->gold_actuator_state.elmo_auxiliary_position * params_.absrad_per_count;
 }
 
 jsd_elmo_state_machine_state_t fastcat::GoldActuator::GetElmoStateMachineState()

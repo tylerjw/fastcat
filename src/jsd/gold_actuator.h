@@ -19,6 +19,8 @@ class GoldActuator : public Actuator
  public:
   GoldActuator();
 
+  double GetElmoAbsolutePosition() override;
+
  protected:
   jsd_egd_state_t jsd_egd_state_;
 

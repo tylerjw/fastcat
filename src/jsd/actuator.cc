@@ -48,11 +48,13 @@ bool fastcat::Actuator::ConfigFromYaml(YAML::Node node)
     return false;
   }
 
-  if (!ParseValCheckRange(node, "gear_ratio", params_.gear_ratio, 0, 1.0e12)) {
+  if (!ParseValCheckRange(node, "rad_per_count", params_.rad_per_count, 0,
+                          1.0e12)) {
     return false;
   }
 
-  if (!ParseValCheckRange(node, "counts_per_rev", params_.counts_per_rev, 0, 1.0e12)) {
+  if (!ParseValCheckRange(node, "absrad_per_count", params_.absrad_per_count, 0,
+                          1.0e12)) {
     return false;
   }
 
@@ -123,7 +125,8 @@ bool fastcat::Actuator::ConfigFromYaml(YAML::Node node)
     return false;
   }
 
-  if (!ParseVal(node, "elmo_brake_engage_msec", params_.elmo_brake_engage_msec)) {
+  if (!ParseVal(node, "elmo_brake_engage_msec",
+                params_.elmo_brake_engage_msec)) {
     return false;
   }
   if (!ParseVal(node, "elmo_brake_disengage_msec",
@@ -193,18 +196,10 @@ bool fastcat::Actuator::ConfigFromYaml(YAML::Node node)
   }
 
   // overall_reduction must be set before using EuToCnts/CntsToEu
-  if (actuator_type == ACTUATOR_TYPE_REVOLUTE) {
-    overall_reduction_ =
-        params_.counts_per_rev * params_.gear_ratio / (2.0 * M_PI);
-
-  } else if (actuator_type == ACTUATOR_TYPE_PRISMATIC) {
-    overall_reduction_ = params_.counts_per_rev * params_.gear_ratio;
-
-  } else {
+  if (actuator_type != ACTUATOR_TYPE_REVOLUTE) {
     ERROR("Bad actuator_type: %d", actuator_type);
     return false;
   }
-  MSG("Overall Reduction: %lf", overall_reduction_);
 
   state_->name = name_;
 
@@ -255,8 +250,8 @@ bool fastcat::Actuator::Write(DeviceCmd& cmd)
 
     case ACTUATOR_SET_DIGITAL_OUTPUT_CMD:
       ElmoSetDigitalOutput(
-        cmd.actuator_set_digital_output_cmd.digital_output_index,
-        cmd.actuator_set_digital_output_cmd.output_level);
+          cmd.actuator_set_digital_output_cmd.digital_output_index,
+          cmd.actuator_set_digital_output_cmd.output_level);
       return true;
       break;
 
@@ -264,7 +259,8 @@ bool fastcat::Actuator::Write(DeviceCmd& cmd)
       // This application may choose to set this during motions
       // in order to boost current during acceleration/decel
       // phases so don't check the state machine
-      params_.peak_current_limit_amps = cmd.actuator_set_max_current_cmd.current;
+      params_.peak_current_limit_amps =
+          cmd.actuator_set_max_current_cmd.current;
       ElmoSetPeakCurrent(params_.peak_current_limit_amps);
       return true;
       break;
@@ -501,8 +497,7 @@ bool fastcat::Actuator::SetOutputPosition(double position)
       "Changing Position from: ", GetActualPosition(*state_),
       "to : ", position);
 
-  elmo_pos_offset_cnts_ =
-      GetElmoActualPosition() - (int32_t)(position * overall_reduction_);
+  elmo_pos_offset_ = GetElmoActualPosition() - position;
   return true;
 }
 
@@ -513,20 +508,20 @@ bool fastcat::Actuator::HasAbsoluteEncoder()
 
 double fastcat::Actuator::CntsToEu(int32_t cnts)
 {
-  return cnts / overall_reduction_;
+  return cnts * params_.rad_per_count;
 }
 double fastcat::Actuator::EuToCnts(double eu)
 {
-  return eu * overall_reduction_;
+  return eu / params_.rad_per_count;
 }
 
 double fastcat::Actuator::PosCntsToEu(int32_t cnts)
 {
-  return CntsToEu(cnts - elmo_pos_offset_cnts_);
+  return CntsToEu(cnts) - elmo_pos_offset_;
 }
 int32_t fastcat::Actuator::PosEuToCnts(double eu)
 {
-  return ((int32_t)EuToCnts(eu)) + elmo_pos_offset_cnts_;
+  return (int32_t)EuToCnts(eu + elmo_pos_offset_);
 }
 
 bool fastcat::Actuator::PosExceedsCmdLimits(double pos_eu)
@@ -680,7 +675,8 @@ std::string fastcat::Actuator::GetFastcatFaultCodeAsString(
 {
   std::string fault_str;
 
-  if (state.type == GOLD_ACTUATOR_STATE || state.type == PLATINUM_ACTUATOR_STATE) {
+  if (state.type == GOLD_ACTUATOR_STATE ||
+      state.type == PLATINUM_ACTUATOR_STATE) {
     ActuatorFastcatFault fault;
     if (state.type == GOLD_ACTUATOR_STATE) {
       fault = static_cast<ActuatorFastcatFault>(
@@ -779,7 +775,7 @@ double fastcat::Actuator::GetActualPosition(const DeviceState& state)
 {
   double actual_position;
   if (state.type == GOLD_ACTUATOR_STATE) {
-    actual_position = state.gold_actuator_state.output_absolute_position;
+    actual_position = state.gold_actuator_state.actual_position;
   } else if (state.type == PLATINUM_ACTUATOR_STATE) {
     actual_position = state.platinum_actuator_state.actual_position;
   } else {

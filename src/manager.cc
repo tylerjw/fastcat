@@ -1068,18 +1068,23 @@ bool fastcat::Manager::SetActuatorPositions()
 
     actuator = std::dynamic_pointer_cast<Actuator>(*device);
 
+    double radpos = 0;
+
     if (actuator->HasAbsoluteEncoder()) {
-      MSG_DEBUG("Actuator (%s) has absolute encoder, ignoring saved positions",
+      MSG_DEBUG("Actuator (%s) has absolute encoder, initalizing with it",
                 dev_name.c_str());
-      continue;
+      radpos = actuator->GetElmoAbsolutePosition();
+    } else {
+      MSG_DEBUG("Actuator (%s) doens not have absolute encoder, initalizing"
+                " to saved position from file",
+                dev_name.c_str());
+      auto find_pos_data = actuator_pos_map_.find(dev_name);
+      radpos = find_pos_data->second.position;
     }
 
-    auto find_pos_data = actuator_pos_map_.find(dev_name);
+    MSG("Setting actuator: %s to pos: %lf", dev_name.c_str(), radpos);
 
-    MSG("Setting actuator: %s to saved pos: %lf", dev_name.c_str(),
-        find_pos_data->second.position);
-
-    if (!actuator->SetOutputPosition(find_pos_data->second.position)) {
+    if (!actuator->SetOutputPosition(radpos)) {
       ERROR("Failure on SetOutputPosition for device: %s", dev_name.c_str());
       return false;
     }
@@ -1104,10 +1109,6 @@ void fastcat::Manager::GetActuatorPositions()
     }
 
     actuator = std::dynamic_pointer_cast<Actuator>(*device);
-
-    if (actuator->HasAbsoluteEncoder()) {
-      continue;
-    }
 
     ActuatorPosData apd         = {0};
     apd.position                = Actuator::GetActualPosition(*dev_state);
