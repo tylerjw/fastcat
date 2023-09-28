@@ -1024,17 +1024,10 @@ bool fastcat::Manager::ValidateActuatorPosFile()
     actuator = std::dynamic_pointer_cast<Actuator>(*device);
 
     auto find_pos_data = actuator_pos_map_.find(dev_name);
-
-    if (actuator->HasAbsoluteEncoder()) {
-      MSG("Actuator %s has absolute encoder so does not need saved position",
-          dev_name.c_str());
-      continue;
-    }
-
     if (find_pos_data == actuator_pos_map_.end()) {
       if (!actuator_fault_on_missing_pos_file_) {
         WARNING(
-            "Missing Startup position for %s, setting starting position to "
+            "Missing Startup position for %s from file, setting file position to "
             "zero",
             dev_name.c_str());
 
@@ -1070,16 +1063,35 @@ bool fastcat::Manager::SetActuatorPositions()
 
     double radpos = 0;
 
+    auto find_pos_data = actuator_pos_map_.find(dev_name);
+    auto file_pos = find_pos_data->second.position;
+
     if (actuator->HasAbsoluteEncoder()) {
       MSG_DEBUG("Actuator (%s) has absolute encoder, initalizing with it",
                 dev_name.c_str());
-      radpos = actuator->GetElmoAbsolutePosition();
+      double abspos = actuator->GetElmoAbsolutePosition();
+
+      // Check if ABS and file agree, otherwise error!
+      // split the file position into revolutions and offset
+      int rev;
+      float roffset = remquof(file_pos, 2*M_PI, &rev);
+
+      // force the absolute encoder to -pi to +pi
+      float aposr = remainder(abspos, 2*M_PI);
+
+      // is that near the file position, ignoring rev?
+      // we allow the saved position to have multi-turn info
+      if (fabs(aposr-roffset) > 0.02) // about 1 degree
+      {
+        ERROR("Elmo %s absolute encoder pos %f doesn't match saved position "
+              "%f, using abs postion!", dev_name.c_str(), abspos, file_pos);
+        radpos = abspos;
+      } else {
+        radpos = file_pos;
+      }
     } else {
-      MSG_DEBUG("Actuator (%s) doens not have absolute encoder, initalizing"
-                " to saved position from file",
-                dev_name.c_str());
-      auto find_pos_data = actuator_pos_map_.find(dev_name);
-      radpos = find_pos_data->second.position;
+      // Set from file
+      radpos = file_pos;
     }
 
     MSG("Setting actuator: %s to pos: %lf", dev_name.c_str(), radpos);
